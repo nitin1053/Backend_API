@@ -28,8 +28,30 @@ jobs:
           username: ${{ secrets.VM_USERNAME }}
           key: ${{ secrets.VM_SSH_KEY }}
           script: |
-            sudo pkill node || true
-            sudo mkdir -p /var/www/backend-api
-            sudo cp -r * /var/www/backend-api/
+            # Check if the directory exists, if not create it
+            if [ ! -d /var/www/backend-api ]; then
+              sudo mkdir -p /var/www/backend-api
+            fi
+
+            # Only copy files if there are changes
+            rsync -av --exclude='.git' . /var/www/backend-api/
+
+            # Navigate to the directory
             cd /var/www/backend-api
+
+            # Check if the application is running and stop it
+            if pgrep node > /dev/null; then
+              sudo pkill node
+            fi
+
+            # Start the application
             sudo nohup node index.js &
+
+            # Verify the application is running
+            sleep 5
+            if pgrep node > /dev/null; then
+              echo "Application started successfully"
+            else
+              echo "Failed to start the application" >&2
+              exit 1
+            fi
