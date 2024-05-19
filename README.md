@@ -16,7 +16,7 @@ This project is a simple backend API created as part of a challenge. The API inc
 1. **Clone the repository:**
 
     ```sh
-    git clone <your-repo-url>
+    git clone https://github.com/nitin1053/Backend_API.git
     cd simple-backend-api
     ```
 
