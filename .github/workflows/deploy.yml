@@ -1,3 +1,4 @@
+# .github/workflows/deploy.yml
 name: Deploy API
 
 on:
@@ -23,7 +24,7 @@ jobs:
         npm install
 
     - name: Copy files to VM
-      uses: appleboy/scp-action@v0.1.1
+      uses: appleboy/scp-action@master
       with:
         host: ${{ secrets.VM_HOST }}
         username: ${{ secrets.VM_USERNAME }}
@@ -32,12 +33,13 @@ jobs:
         target: "/home/azureuser/simple_backend_api"
 
     - name: Run deployment script on VM
-      uses: appleboy/ssh-action@v0.1.1
+      uses: appleboy/ssh-action@master
       with:
         host: ${{ secrets.VM_HOST }}
         username: ${{ secrets.VM_USERNAME }}
         key: ${{ secrets.VM_SSH_KEY }}
         script: |
           cd /home/azureuser/simple_backend_api
+          npm install
           sudo fuser -k 80/tcp || true
           nohup node index.js &
