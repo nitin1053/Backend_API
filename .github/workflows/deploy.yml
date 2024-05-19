@@ -1,4 +1,4 @@
-name: Deploy to Server
+name: Deploy API
 
 on:
   push:
@@ -6,28 +6,38 @@ on:
       - master
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
-    
-    - name: Install Node.js
+
+    - name: Set up Node.js
       uses: actions/setup-node@v2
       with:
         node-version: '14'
-    
+
     - name: Install dependencies
-      run: npm install
-    
-    - name: Deploy via SSH
-      uses: appleboy/ssh-action@master
+      run: |
+        npm install
+
+    - name: Copy files to VM
+      uses: appleboy/scp-action@v0.1.1
+      with:
+        host: ${{ secrets.VM_HOST }}
+        username: ${{ secrets.VM_USERNAME }}
+        key: ${{ secrets.VM_SSH_KEY }}
+        source: "."
+        target: "/home/azureuser/simple_backend_api"
+
+    - name: Run deployment script on VM
+      uses: appleboy/ssh-action@v0.1.1
       with:
         host: ${{ secrets.VM_HOST }}
         username: ${{ secrets.VM_USERNAME }}
         key: ${{ secrets.VM_SSH_KEY }}
         script: |
-          cd /path/to/your/app
-          npm install
-          pm2 restart all
+          cd /home/azureuser/simple_backend_api
+          sudo fuser -k 80/tcp || true
+          nohup node index.js &
