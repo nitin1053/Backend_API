@@ -23,6 +23,12 @@ jobs:
       run: |
         npm install
 
+    - name: Print debug info
+      run: |
+        echo "Debug Info"
+        uname -a
+        env
+
     - name: Copy files to VM
       uses: appleboy/scp-action@master
       with:
@@ -31,6 +37,8 @@ jobs:
         key: ${{ secrets.VM_SSH_KEY }}
         source: "."
         target: "/home/azureuser/simple_backend_api"
+      env:
+        DEBUG: true
 
     - name: Run deployment script on VM
       uses: appleboy/ssh-action@master
@@ -43,3 +51,5 @@ jobs:
           npm install
           sudo fuser -k 80/tcp || true
           nohup node index.js &
+      env:
+        DEBUG: true
