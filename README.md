@@ -79,7 +79,7 @@ To securely deploy to the virtual machine, you need to add the SSH private key a
 Here is the content of `.github/workflows/deploy.yml`:
 
 ```yaml
-name: Deploy Backend API
+name: Deploy API
 
 on:
   push:
@@ -87,27 +87,47 @@ on:
       - master
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+    - name: Checkout code
+      uses: actions/checkout@v2
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v2
-        with:
-          node-version: '14'
+    - name: Set up Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '14'
 
-      - name: Install dependencies
-        run: npm install
+    - name: Install dependencies
+      run: |
+        npm install
+    - name: Print debug info
+      run: |
+        echo "Debug Info"
+        uname -a
+        env
+    - name: Copy files to VM
+      uses: appleboy/scp-action@master
+      with:
+        host: ${{ secrets.VM_HOST }}
+        username: ${{ secrets.VM_USERNAME }}
+        key: ${{ secrets.VM_SSH_KEY }}
+        source: "."
+        target: "/home/azureuser/simple_backend_api"
+      env:
+        DEBUG: true
 
-      - name: Deploy to VM
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          VM_HOST: 20.2.219.112
-          VM_USER: azureuser
-        run: |
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > private_key
-          chmod 600 private_key
-          ssh -i private_key -o StrictHostKeyChecking=no ${VM_USER}@${VM_HOST} "sudo pkill node; cd ~/simple-backend-api && git pull && npm install && sudo node index.js &"
+    - name: Run deployment script on VM
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.VM_HOST }}
+        username: ${{ secrets.VM_USERNAME }}
+        key: ${{ secrets.VM_SSH_KEY }}
+        script: |
+          cd /home/azureuser/simple_backend_api
+          npm install
+          sudo fuser -k 80/tcp || true
+          nohup node index.js &
+      env:
+        DEBUG: true
