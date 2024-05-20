@@ -1,13 +1,12 @@
-# .github/workflows/deploy.yml
 name: Deploy API
 
 on:
   push:
     branches:
-      - master
+      - main
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -20,36 +19,20 @@ jobs:
         node-version: '14'
 
     - name: Install dependencies
-      run: |
-        npm install
+      run: npm install
 
-    - name: Print debug info
-      run: |
-        echo "Debug Info"
-        uname -a
-        env
-
-    - name: Copy files to VM
-      uses: appleboy/scp-action@master
-      with:
-        host: ${{ secrets.VM_HOST }}
-        username: ${{ secrets.VM_USERNAME }}
-        key: ${{ secrets.VM_SSH_KEY }}
-        source: "."
-        target: "/home/azureuser/simple_backend_api"
-      env:
-        DEBUG: true
-
-    - name: Run deployment script on VM
-      uses: appleboy/ssh-action@master
+    - name: Deploy to VM
+      uses: appleboy/ssh-action@v0.1.7
       with:
         host: ${{ secrets.VM_HOST }}
         username: ${{ secrets.VM_USERNAME }}
         key: ${{ secrets.VM_SSH_KEY }}
         script: |
-          cd /home/azureuser/simple_backend_api
+          sudo pkill node || true
+          cd /path/to/deployment/directory
+          git pull origin main
           npm install
-          sudo fuser -k 80/tcp || true
-          nohup node index.js &
-      env:
-        DEBUG: true
+          sudo node index.js &
+
+    - name: Verify deployment
+      run: curl http://${{ secrets.VM_HOST }}/sayHello
