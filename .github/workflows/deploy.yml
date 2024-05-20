@@ -21,6 +21,18 @@ jobs:
     - name: Install dependencies
       run: npm install
 
+    - name: Clone repository on VM if not exists
+      uses: appleboy/ssh-action@v0.1.7
+      with:
+        host: ${{ secrets.VM_HOST }}
+        username: ${{ secrets.VM_USERNAME }}
+        key: ${{ secrets.VM_SSH_KEY }}
+        script: |
+          if [ ! -d "/home/azureuser/backend-api" ]; then
+            sudo mkdir -p /home/azureuser/backend-api
+            git clone https://github.com/nitin1053/backend_apis.git /home/azureuser/backend-api
+          fi
+
     - name: Deploy to VM
       uses: appleboy/ssh-action@v0.1.7
       with:
@@ -29,10 +41,10 @@ jobs:
         key: ${{ secrets.VM_SSH_KEY }}
         script: |
           sudo pkill node || true
-          cd /path/to/deployment/directory
+          cd /home/azureuser/backend-api
           git pull origin main
           npm install
-          sudo node index.js &
+          PORT=3000 npm start &
 
     - name: Verify deployment
-      run: curl http://${{ secrets.VM_HOST }}/sayHello
+      run: curl http://${{ secrets.VM_HOST }}:3000/sayHello
